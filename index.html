@@ -99,12 +99,14 @@
   .pulse{animation:pulse 1.8s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
   .logo-hero{width:min(300px,52vw);height:auto;margin:6px 0 4px;filter:drop-shadow(0 8px 30px rgba(0,0,0,.6))}
+  .logo-opening{width:min(680px,88vw);height:auto;filter:drop-shadow(0 18px 65px rgba(0,0,0,.8))}
   .tagline{font-size:clamp(19px,2.8vw,32px);color:var(--blanc);max-width:760px;font-weight:500}
   @media (min-width:601px){ .row-play{display:none} }
   .qr{margin-top:28px;background:#F3EFE2;padding:14px;border-radius:8px;border:2px solid var(--or2);display:inline-block}
   .qr img{display:block;width:min(300px,55vw);height:auto;image-rendering:pixelated}
   .qr-url{font-family:'Cinzel',serif;font-weight:700;color:var(--or);font-size:clamp(16px,2.4vw,26px);margin-top:14px;letter-spacing:.06em}
   .logo-fixed{position:fixed;top:14px;right:14px;width:180px;height:180px;z-index:50;filter:drop-shadow(0 4px 16px rgba(0,0,0,.55))}
+  .intro-video{width:min(1100px,96vw);max-height:78vh;background:#000;border:2px solid var(--or2);border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.65)}
   #netwarn{position:fixed;top:0;left:0;right:0;z-index:99;background:#8A1F1F;color:#fff;
     font:600 13px 'Jost',sans-serif;padding:10px 14px;text-align:center;display:none}
   #soundToggle{position:fixed;left:14px;bottom:14px;z-index:90;display:none;border:1px solid var(--or2);
@@ -163,6 +165,7 @@ function toggleMusic(){
   soundToggle.textContent=musicMuted?"🔇 Musique":"🔊 Musique";
   soundToggle.setAttribute("aria-label",musicMuted?"Activer la musique":"Couper la musique");
 }
+function stopMusic(){ MUSIC.forEach(a=>{ a.pause(); a.currentTime=0; }); }
 soundToggle.onclick=toggleMusic;
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function hex(content,cls){ return `<div class="hexrow"><div class="rule"></div><div class="hex ${cls||""}"><div class="hex-in">${content}</div></div><div class="rule"></div></div>`; }
@@ -273,11 +276,10 @@ function renderHostLogin(){
     const {error}=await sb.auth.signInWithPassword({email,password});
     if(error){ document.getElementById("err").textContent="Identifiants refusés."; return; }
     role="host";
-    playMusic(music2014,true);
     await loadQuestions();
     const {data:secrets}=await sb.from("question_secrets").select();
     (secrets||[]).forEach(s=>{ const q=QUESTIONS.find(x=>x.idx===s.idx); if(q) q.correct=s.correct; });
-    hostLobby();
+    hostOpeningVideo();
   };
 }
 async function hostReset(){
@@ -286,7 +288,7 @@ async function hostReset(){
   await sb.from("game_state").update({phase:"lobby",q_index:-1,winner_name:null,winner_ms:null,correct_choice:null,counts:null,history:[]}).eq("id",1);
 }
 async function hostLobby(){
-  playMusic(music2014,true);
+  playMusic(musicVote,true);
   await hostReset();
   const names=new Set();
   const draw=()=>{
@@ -324,6 +326,34 @@ async function hostOfficialNotice(){
     <p class="sub tagline">de Maître Lanchon, notaire</p>
     <button class="btn" id="bBegin">Commencer le quiz</button>`;
   document.getElementById("bBegin").onclick=()=>hostLot(0);
+}
+function hostOpeningVideo(){
+  stopMusic();
+  app.innerHTML=`
+    <video class="intro-video" id="introVideo" src="download.mp4" controls autoplay playsinline></video>
+    <button class="btn ghost" id="bSkipIntro">Passer le générique</button>`;
+  const video=document.getElementById("introVideo");
+  let advanced=false;
+  const advance=()=>{ if(advanced) return; advanced=true; hostLogoPanel(); };
+  video.onended=advance;
+  video.play().catch(()=>{});
+  document.getElementById("bSkipIntro").onclick=advance;
+}
+function hostLogoPanel(){
+  app.innerHTML=`
+    <audio id="openingLogoMusic" src="download.mp4" autoplay loop></audio>
+    ${logo("logo-opening")}`;
+  const openingLogoMusic=document.getElementById("openingLogoMusic");
+  openingLogoMusic.volume=.75;
+  openingLogoMusic.play().catch(()=>{});
+  let advanced=false;
+  const advance=()=>{
+    if(advanced) return;
+    advanced=true;
+    openingLogoMusic.pause();
+    hostLobby();
+  };
+  app.onclick=advance;
 }
 async function hostLot(qi){
   playMusic(qi===0?music2014:music2008,true);
