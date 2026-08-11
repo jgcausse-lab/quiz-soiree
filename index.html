@@ -110,9 +110,9 @@
   .black-wait{position:fixed;inset:0;background:#000;z-index:80}
   #netwarn{position:fixed;top:0;left:0;right:0;z-index:99;background:#8A1F1F;color:#fff;
     font:600 13px 'Jost',sans-serif;padding:10px 14px;text-align:center;display:none}
-  #hostNav{position:fixed;left:0;right:0;bottom:14px;z-index:100;display:none;justify-content:center;gap:12px;pointer-events:none}
-  .nav-btn{pointer-events:auto;width:58px;height:40px;border:1px solid #3d414b;border-radius:8px;background:rgba(28,31,38,.82);
-    color:#aeb3bd;font:500 20px 'Jost',sans-serif;cursor:pointer;opacity:.68;transition:opacity .2s,background .2s}
+  #hostNav{position:fixed;left:0;right:0;bottom:max(34px,env(safe-area-inset-bottom));z-index:9999;display:none;justify-content:center;gap:14px;pointer-events:none}
+  .nav-btn{pointer-events:auto;width:68px;height:46px;border:1px solid #555b66;border-radius:9px;background:rgba(30,34,42,.94);
+    color:#d0d3d9;font:500 24px 'Jost',sans-serif;cursor:pointer;opacity:.82;box-shadow:0 4px 18px rgba(0,0,0,.55);transition:opacity .2s,background .2s}
   .nav-btn:hover,.nav-btn:focus{opacity:1;background:#30343d;outline:none}
   .nav-btn:disabled{opacity:.15;cursor:default}
   @media (max-width:600px){
@@ -467,7 +467,9 @@ async function hostResults(qi){
     <div class="stack">
       ${hex(`<span class="letter">Bonne réponse&nbsp;:</span> ${esc(displayedCorrect)}`,"good")}
     </div>`;
-  const next=FORCED_NO_WINNER.has(qi)
+  const next=qi===2
+    ? ()=>hostLot(3)
+    : FORCED_NO_WINNER.has(qi)
     ? ()=>qi>=QUESTIONS.length-1?hostEnd():hostLot(qi+1)
     : ()=>hostWinner(qi);
   setHostNav(()=>hostQuestion(qi),next);
@@ -493,10 +495,7 @@ async function hostWinner(qi){
          ? `<div class="badge">Le plus rapide</div>
          <div class="winner-name">${esc(winner.player_name)}</div>
          <p class="sub">${winner_ms!==null?`Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — `:"Piège ! La bonne réponse était Tosca. Les organisateurs s'attribuent "}<span class="time">${esc(Q.lot)}</span></p>`
-      : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
-    <div class="stack">
-      ${hex(specialAnswer?`<span class="letter">Réponse&nbsp;:</span> ${esc(specialAnswer)}`:`<span class="letter">${LETTERS[Q.correct]}&nbsp;:</span> ${esc(Q.choices[Q.correct])}`,"good")}
-    </div>`;
+      : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}`;
   setHostNav(()=>hostResults(qi),()=>last?hostEnd():hostLot(qi+1));
 }
 async function hostEnd(){
