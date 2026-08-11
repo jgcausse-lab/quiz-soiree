@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qui veut gagner leurs millions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --noir:#01040F; --nuit:#020B2D; --bleu:#0B2464; --bleu2:#123084;
+    --or:#E8B94A; --or2:#B8892E; --blanc:#F3EFE2; --muted:#8FA0CE;
+    --vert:#1E9E4C; --orange:#E87B1E;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{background:#01040F;color-scheme:dark}
+  html,body{height:100%}
+  body{
+    font-family:'Jost',sans-serif;color:var(--blanc);-webkit-font-smoothing:antialiased;
+    background-color:#01040F;
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(18,48,132,.55), transparent 65%),
+      radial-gradient(ellipse 70% 50% at 50% 105%, rgba(11,36,100,.5), transparent 60%);
+    background-attachment:fixed;
+  }
+  #app{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 16px;text-align:center}
+  .title{font-family:'Cinzel',serif;font-weight:900;color:var(--or);
+    font-size:clamp(24px,5vw,54px);line-height:1.1;
+    text-shadow:0 0 30px rgba(232,185,74,.35);}
+  .eyebrow{letter-spacing:.35em;text-transform:uppercase;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:14px}
+  .sub{color:var(--muted);margin-top:14px;font-size:15px;max-width:540px;line-height:1.55}
+  .hexrow{display:flex;align-items:center;width:100%;max-width:1000px}
+  .rule{flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--or2),var(--or),var(--or2),transparent);min-width:10px}
+  .hex{
+    --pt:26px;
+    flex:0 1 auto;width:100%;max-width:760px;
+    background:linear-gradient(180deg,#F0D080,var(--or2) 55%,#7A5A1C);
+    clip-path:polygon(var(--pt) 0,calc(100% - var(--pt)) 0,100% 50%,calc(100% - var(--pt)) 100%,var(--pt) 100%,0 50%);
+    padding:2px;
+  }
+  .hex-in{
+    clip-path:polygon(var(--pt) 0,calc(100% - var(--pt)) 0,100% 50%,calc(100% - var(--pt)) 100%,var(--pt) 100%,0 50%);
+    background:linear-gradient(180deg,var(--bleu2) 0%,var(--nuit) 55%,var(--noir) 100%);
+    padding:18px 44px;min-height:64px;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    font-size:clamp(15px,2.4vw,24px);font-weight:500;line-height:1.3;
+  }
+  .hex.q .hex-in{padding:22px 50px;font-size:clamp(17px,2.8vw,28px);font-weight:600}
+  button.hexbtn{border:none;background:none;padding:0;width:100%;max-width:760px;cursor:pointer;font-family:'Jost';color:var(--blanc)}
+  button.hexbtn .hex{width:100%;transition:transform .12s ease}
+  button.hexbtn:hover .hex{transform:scale(1.015)}
+  button.hexbtn:hover .hex-in,button.hexbtn:active .hex-in{background:linear-gradient(180deg,var(--orange),#8A4208)}
+  button.hexbtn:focus-visible{outline:3px solid var(--or);outline-offset:4px;border-radius:6px}
+  .letter{font-family:'Cinzel',serif;font-weight:700;color:var(--or);font-size:.95em;flex:0 0 auto}
+  .hex.good .hex-in{background:linear-gradient(180deg,var(--vert),#0A4A22)}
+  .hex.dim{opacity:.3}
+  .hex .count{color:var(--or);font-weight:700;margin-left:10px;flex:0 0 auto}
+  .stack{display:flex;flex-direction:column;gap:14px;width:100%;max-width:1000px;margin-top:30px;align-items:center}
+  .lot{
+    margin-top:26px;display:inline-flex;align-items:center;gap:12px;
+    border:1px solid var(--or2);border-radius:4px;padding:10px 22px;
+    background:rgba(232,185,74,.06);
+  }
+  .lot .lbl{letter-spacing:.3em;text-transform:uppercase;font-size:10px;color:var(--muted);font-weight:600}
+  .lot .val{font-family:'Cinzel',serif;font-weight:700;color:var(--or);font-size:clamp(15px,2.4vw,22px)}
+  .btn{
+    font-family:'Jost';font-weight:600;font-size:16px;letter-spacing:.06em;text-transform:uppercase;
+    background:var(--or);color:var(--noir);border:none;border-radius:4px;
+    padding:15px 30px;cursor:pointer;margin-top:26px;transition:filter .12s ease,transform .12s ease;
+  }
+  .btn:hover{filter:brightness(1.1);transform:translateY(-2px)}
+  .btn:focus-visible{outline:3px solid var(--blanc);outline-offset:3px}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--bleu2);text-transform:none;letter-spacing:0;font-weight:500;font-size:14px;padding:12px 22px}
+  .btn.ghost:hover{color:var(--blanc)}
+  .btn:disabled{opacity:.4;cursor:default;transform:none}
+  .row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  input{
+    background:var(--nuit);border:1px solid var(--bleu2);color:var(--blanc);
+    border-radius:4px;padding:15px 20px;font-size:17px;font-family:'Jost';
+    width:min(340px,90vw);text-align:center;margin-top:16px;display:block;
+  }
+  input:focus{outline:2px solid var(--or)}
+  .players{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:26px;max-width:900px}
+  .chip{background:var(--nuit);border:1px solid var(--bleu2);border-radius:4px;padding:8px 18px;font-size:15px;font-weight:500}
+  .winner-name{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(30px,6vw,64px);color:var(--blanc);line-height:1.1}
+  .badge{
+    display:inline-block;border:1px solid var(--or);color:var(--or);
+    font-weight:600;letter-spacing:.35em;text-transform:uppercase;font-size:12px;
+    padding:9px 22px;border-radius:4px;margin-bottom:20px;
+  }
+  .time{font-family:'Cinzel',serif;font-weight:700;color:var(--or)}
+  .qnum{color:var(--muted);font-size:12px;letter-spacing:.35em;text-transform:uppercase;margin-bottom:16px;font-weight:600}
+  .podium{margin-top:28px;display:flex;flex-direction:column;gap:10px;width:min(460px,100%)}
+  .podium .line{background:var(--nuit);border:1px solid var(--bleu2);border-radius:4px;padding:14px 20px;display:flex;justify-content:space-between;gap:14px;font-weight:500;text-align:left}
+  .podium .line:first-child{border-color:var(--or)}
+  .status{color:var(--muted);font-size:14px;margin-top:18px}
+  .err{color:#F08A8A;font-size:14px;margin-top:14px;min-height:18px}
+  .pulse{animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+  #netwarn{position:fixed;top:0;left:0;right:0;z-index:99;background:#8A1F1F;color:#fff;
+    font:600 13px 'Jost',sans-serif;padding:10px 14px;text-align:center;display:none}
+  @media (max-width:600px){
+    .rule{display:none}
+    .hex{--pt:18px}
+    .hex-in{padding:15px 30px;min-height:58px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="netwarn">⚠ Connexion au serveur perdue — nouvelle tentative en cours…</div>
+<div id="app"></div>
+<script>
+/* ============================================================
+   CONFIGURATION — collez vos deux valeurs Supabase ici
+   (Supabase > Project Settings > API)
+   ============================================================ */
+const SUPABASE_URL      = "https://labvcqywqzhpzsxkjejm.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_grhzzmzHT5FSvj5OhdjZ0A_zD59GYed";
+
+const LETTERS=["A","B","C","D"];
+const app=document.getElementById("app");
+const netwarn=document.getElementById("netwarn");
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function hex(content,cls){ return `<div class="hexrow"><div class="rule"></div><div class="hex ${cls||""}"><div class="hex-in">${content}</div></div><div class="rule"></div></div>`; }
+function netDown(v){ netwarn.style.display=v?"block":"none"; }
+
+if(SUPABASE_URL.startsWith("COLLEZ")){
+  app.innerHTML=`<div class="title">Configuration requise</div>
+  <p class="sub">Ouvrez le fichier index.html dans un éditeur de texte et collez votre Project URL et votre clé anon public Supabase en haut du script (voir le guide, étape 2).</p>`;
+  throw new Error("Non configuré");
+}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ---------- État local ---------- */
+let QUESTIONS=[];                 // {idx,q,choices,lot} (+correct côté animateur)
+let role=null;                    // 'host' | 'player'
+let pid=localStorage.getItem("qz_pid")||("p"+Math.random().toString(36).slice(2,10));
+localStorage.setItem("qz_pid",pid);
+let myName=localStorage.getItem("qz_name")||null;
+let state=null;                   // dernière ligne game_state connue
+let myAnswers={};                 // qIndex -> choice (local, pour l'affichage)
+let channel=null, pollTimer=null;
+
+async function loadQuestions(){
+  const {data,error}=await sb.from("questions").select().order("idx");
+  if(error){ netDown(true); return false; }
+  QUESTIONS=data; netDown(false); return true;
+}
+async function fetchState(){
+  const {data,error}=await sb.from("game_state").select().eq("id",1).single();
+  if(error){ netDown(true); return null; }
+  netDown(false); return data;
+}
+function subscribeState(onChange){
+  if(channel) sb.removeChannel(channel);
+  channel=sb.channel("state")
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"game_state"},p=>onChange(p.new))
+    .subscribe();
+  /* Filet de sécurité réseau : re-lecture périodique même si le temps réel décroche */
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer=setInterval(async ()=>{ const s=await fetchState(); if(s) onChange(s); },4000);
+}
+
+/* ============================================================
+   ACCUEIL
+   ============================================================ */
+function renderLanding(){
+  app.innerHTML=`
+    <div class="eyebrow">Le grand quiz de la soirée</div>
+    <div class="title">Qui veut gagner<br>leurs millions</div>
+    <p class="sub">Une question sur le grand écran, quatre réponses sur votre téléphone. Le premier à donner la bonne réponse remporte le lot en jeu.</p>
+    <div class="row">
+      <button class="btn" id="bPlay">Je participe</button>
+      <button class="btn ghost" id="bHost">Écran animateur</button>
+    </div>`;
+  document.getElementById("bPlay").onclick=renderJoin;
+  document.getElementById("bHost").onclick=renderHostLogin;
+}
+
+/* ============================================================
+   ANIMATEUR
+   ============================================================ */
+function renderHostLogin(){
+  app.innerHTML=`
+    <div class="eyebrow">Accès animateur</div>
+    <div class="title">Connexion</div>
+    <input type="email" id="iMail" placeholder="Email animateur" autocomplete="username">
+    <input type="password" id="iPwd" placeholder="Mot de passe" autocomplete="current-password">
+    <div class="err" id="err"></div>
+    <div class="row">
+      <button class="btn" id="bLogin">Se connecter</button>
+      <button class="btn ghost" id="bBack">Retour</button>
+    </div>`;
+  document.getElementById("bBack").onclick=renderLanding;
+  document.getElementById("bLogin").onclick=async ()=>{
+    const email=document.getElementById("iMail").value.trim();
+    const password=document.getElementById("iPwd").value;
+    const {error}=await sb.auth.signInWithPassword({email,password});
+    if(error){ document.getElementById("err").textContent="Identifiants refusés."; return; }
+    role="host";
+    await loadQuestions();
+    const {data:secrets}=await sb.from("question_secrets").select();
+    (secrets||[]).forEach(s=>{ const q=QUESTIONS.find(x=>x.idx===s.idx); if(q) q.correct=s.correct; });
+    hostLobby();
+  };
+}
+async function hostReset(){
+  await sb.from("answers").delete().neq("player_id","");
+  await sb.from("players").delete().neq("id","");
+  await sb.from("game_state").update({phase:"lobby",q_index:-1,winner_name:null,winner_ms:null,correct_choice:null,counts:null,history:[]}).eq("id",1);
+}
+async function hostLobby(){
+  await hostReset();
+  const names=new Set();
+  const draw=()=>{
+    app.innerHTML=`
+      <div class="eyebrow">Salle d'attente</div>
+      <div class="title">Qui veut gagner<br>leurs millions</div>
+      <p class="sub">Chaque invité scanne le QR code ou ouvre le lien, puis touche « Je participe ».</p>
+      <div class="players">${names.size?[...names].map(n=>`<span class="chip">${esc(n)}</span>`).join(""):'<span class="status pulse">Personne pour l\'instant…</span>'}</div>
+      <p class="status">${names.size} joueur${names.size>1?"s":""} connecté${names.size>1?"s":""}</p>
+      <button class="btn" id="bStart">Lancer la première question</button>`;
+    document.getElementById("bStart").onclick=()=>hostQuestion(0);
+  };
+  draw();
+  if(channel) sb.removeChannel(channel);
+  channel=sb.channel("lobby")
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"players"},p=>{ names.add(p.new.name); draw(); })
+    .subscribe();
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer=setInterval(async ()=>{
+    const {data}=await sb.from("players").select("name");
+    if(data){ data.forEach(x=>names.add(x.name)); netDown(false); draw(); } else netDown(true);
+  },4000);
+}
+async function hostQuestion(qi){
+  const {error}=await sb.from("game_state").update({phase:"question",q_index:qi,winner_name:null,winner_ms:null,correct_choice:null,counts:null}).eq("id",1);
+  if(error){ netDown(true); return; }
+  const Q=QUESTIONS[qi];
+  let n=0;
+  const draw=()=>{
+    app.innerHTML=`
+      <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
+      ${hex(esc(Q.q),"q")}
+      <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
+      <div class="stack">
+        ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span> ${esc(c)}`)).join("")}
+      </div>
+      <p class="status pulse">${n} réponse${n>1?"s":""} reçue${n>1?"s":""}</p>
+      <button class="btn" id="bReveal">Révéler la réponse</button>`;
+    document.getElementById("bReveal").onclick=()=>hostReveal(qi);
+  };
+  draw();
+  if(channel) sb.removeChannel(channel);
+  channel=sb.channel("answers")
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"answers"},p=>{ if(p.new.q_index===qi){ n++; draw(); } })
+    .subscribe();
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer=setInterval(async ()=>{
+    const {data}=await sb.from("answers").select("player_id").eq("q_index",qi);
+    if(data){ n=data.length; netDown(false); draw(); } else netDown(true);
+  },4000);
+}
+async function hostReveal(qi){
+  if(pollTimer) clearInterval(pollTimer);
+  const Q=QUESTIONS[qi];
+  const st=await fetchState(); if(!st) return;
+  const {data:answers}=await sb.from("answers").select().eq("q_index",qi).order("created_at");
+  const all=(answers||[]);
+  const counts=[0,0,0,0];
+  all.forEach(a=>{ counts[a.choice]++; });
+  const t0=new Date(st.q_started_at).getTime();
+  const good=all.filter(a=>a.choice===Q.correct);
+  const winner=good.length?good[0]:null;
+  const winner_ms=winner?Math.max(0,new Date(winner.created_at).getTime()-t0):null;
+  const history=[...(st.history||[]),{q:qi,winner:winner?winner.player_name:null,ms:winner_ms,lot:Q.lot}];
+  await sb.from("game_state").update({
+    phase:"reveal",q_index:qi,correct_choice:Q.correct,
+    winner_name:winner?winner.player_name:null,winner_ms,counts,history
+  }).eq("id",1);
+  const last=qi>=QUESTIONS.length-1;
+  app.innerHTML=`
+    <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
+    ${winner
+      ? `<div class="badge">Le plus rapide</div>
+         <div class="winner-name">${esc(winner.player_name)}</div>
+         <p class="sub">Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — remporte <span class="time">${esc(Q.lot)}</span></p>`
+      : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
+    <div class="stack">
+      ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span> ${esc(c)} <span class="count">· ${counts[i]}</span>`, i===Q.correct?"good":"dim")).join("")}
+    </div>
+    <button class="btn" id="bNext">${last?"Voir le palmarès":"Question suivante"}</button>`;
+  document.getElementById("bNext").onclick=()=> last?hostEnd():hostQuestion(qi+1);
+}
+async function hostEnd(){
+  const st=await fetchState(); if(!st) return;
+  await sb.from("game_state").update({phase:"end"}).eq("id",1);
+  const byPlayer={};
+  (st.history||[]).forEach(h=>{ if(h.winner){ (byPlayer[h.winner]=byPlayer[h.winner]||[]).push(h.lot); } });
+  const ranked=Object.entries(byPlayer).sort((a,b)=>b[1].length-a[1].length);
+  app.innerHTML=`
+    <div class="eyebrow">Fin du jeu</div>
+    <div class="title">Palmarès</div>
+    <div class="podium">${ranked.length?ranked.map(([n,lots],i)=>`
+      <div class="line"><span>${i+1}. ${esc(n)}</span><span class="time">${lots.map(esc).join(" · ")}</span></div>`).join("")
+      :'<span class="status">Aucun gagnant cette fois.</span>'}
+    </div>
+    <button class="btn" id="bAgain">Nouvelle partie</button>`;
+  document.getElementById("bAgain").onclick=hostLobby;
+}
+
+/* ============================================================
+   JOUEUR
+   ============================================================ */
+function renderJoin(){
+  app.innerHTML=`
+    <div class="eyebrow">Bienvenue au jeu</div>
+    <div class="title">Votre pseudo</div>
+    <input type="text" id="iName" maxlength="20" placeholder="Ex. Camille" autocomplete="off" value="${myName?esc(myName):""}">
+    <div class="err" id="err"></div>
+    <div class="row"><button class="btn" id="bGo">Rejoindre</button>
+    <button class="btn ghost" id="bBack">Retour</button></div>`;
+  const go=async ()=>{
+    const n=document.getElementById("iName").value.trim();
+    if(!n) return;
+    myName=n; localStorage.setItem("qz_name",n);
+    const {error}=await sb.from("players").upsert({id:pid,name:n});
+    if(error && error.code!=="23505"){ document.getElementById("err").textContent="Connexion impossible — vérifiez votre réseau."; return; }
+    role="player";
+    await loadQuestions();
+    playerStart();
+  };
+  document.getElementById("bGo").onclick=go;
+  document.getElementById("iName").addEventListener("keydown",e=>{if(e.key==="Enter")go();});
+  document.getElementById("bBack").onclick=renderLanding;
+}
+async function playerStart(){
+  const s=await fetchState();
+  if(s) playerRender(s);
+  subscribeState(playerRender);
+}
+function playerRender(s){
+  state=s;
+  if(s.phase==="lobby"||s.q_index<0){
+    app.innerHTML=`<div class="eyebrow">${esc(myName)}</div><div class="title">Vous êtes<br>dans le jeu</div><p class="sub pulse">La première question arrive sur le grand écran…</p>`;
+    return;
+  }
+  const Q=QUESTIONS[s.q_index];
+  if(!Q) return;
+  if(s.phase==="question"){
+    const mine=myAnswers[s.q_index];
+    if(mine!==undefined){
+      app.innerHTML=`<div class="qnum">Question ${s.q_index+1}</div><div class="title">C'est votre<br>dernier mot ?</div><p class="sub pulse">Réponse ${LETTERS[mine]} enregistrée. Regardez le grand écran…</p>`;
+      return;
+    }
+    app.innerHTML=`
+      <div class="qnum">Question ${s.q_index+1}</div>
+      ${hex(esc(Q.q),"q")}
+      <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
+      <div class="stack">
+        ${Q.choices.map((c,i)=>`<button class="hexbtn" data-i="${i}"><div class="hex"><div class="hex-in"><span class="letter">${LETTERS[i]}&nbsp;:</span> ${esc(c)}</div></div></button>`).join("")}
+      </div>`;
+    document.querySelectorAll(".hexbtn").forEach(b=>{
+      b.onclick=async ()=>{
+        const qi=s.q_index;
+        if(myAnswers[qi]!==undefined) return;
+        const choice=parseInt(b.dataset.i);
+        myAnswers[qi]=choice;
+        app.innerHTML=`<div class="qnum">Question ${qi+1}</div><div class="title">C'est votre<br>dernier mot ?</div><p class="sub pulse">Réponse ${LETTERS[choice]} enregistrée. Regardez le grand écran…</p>`;
+        const {error}=await sb.from("answers").insert({q_index:qi,player_id:pid,player_name:myName,choice});
+        if(error && error.code!=="23505"){ netDown(true); setTimeout(()=>netDown(false),3000); }
+      };
+    });
+    return;
+  }
+  if(s.phase==="reveal"){
+    const mine=myAnswers[s.q_index];
+    const iWon=s.winner_name===myName && mine===s.correct_choice;
+    const iRight=mine===s.correct_choice;
+    app.innerHTML=`
+      <div class="qnum">Question ${s.q_index+1}</div>
+      ${iWon?`<div class="badge">Le plus rapide</div><div class="title">Vous remportez<br>${esc(Q.lot)} !</div><p class="sub">Bonne réponse en <span class="time">${(s.winner_ms/1000).toFixed(2)} s</span></p>`
+      : iRight?`<div class="title">Bonne réponse…</div><p class="sub">mais ${s.winner_name?esc(s.winner_name)+" a été plus rapide":"personne n'a gagné"}.</p>`
+      : mine===undefined?`<div class="title">Trop tard !</div><p class="sub">La bonne réponse était ${LETTERS[s.correct_choice]} : ${esc(Q.choices[s.correct_choice])}.</p>`
+      :`<div class="title">Mauvaise<br>réponse</div><p class="sub">La bonne réponse était ${LETTERS[s.correct_choice]} : ${esc(Q.choices[s.correct_choice])}.</p>`}`;
+    return;
+  }
+  if(s.phase==="end"){
+    const mine=[];
+    (s.history||[]).forEach(h=>{ if(h.winner===myName) mine.push(h.lot); });
+    app.innerHTML=`<div class="eyebrow">Fin du jeu</div>
+      <div class="title">${mine.length?"Vos gains":"Merci d'avoir joué !"}</div>
+      ${mine.length?`<p class="sub">${mine.map(esc).join(" · ")}</p>`:""}
+      <p class="sub">Le palmarès complet est sur le grand écran.</p>`;
+  }
+}
+
+renderLanding();
+</script>
+</body>
+</html>
