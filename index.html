@@ -362,6 +362,7 @@ async function hostQuestion(qi){
   const Q=QUESTIONS[qi];
   let n=0;
   const draw=()=>{
+    const displayedAnswers=FORCED_NO_WINNER.has(qi)?0:n;
     app.innerHTML=`
       ${logo()}
       <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
@@ -370,7 +371,7 @@ async function hostQuestion(qi){
       <div class="stack">
         ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span> ${esc(c)}`)).join("")}
       </div>
-      <p class="status pulse">${n} réponse${n>1?"s":""} reçue${n>1?"s":""}</p>
+      <p class="status pulse">${FORCED_NO_WINNER.has(qi)?"0 participant":`${displayedAnswers} réponse${displayedAnswers>1?"s":""} reçue${displayedAnswers>1?"s":""}`}</p>
       <button class="btn" id="bReveal">Voir les bonnes réponses</button>`;
     document.getElementById("bReveal").onclick=()=>hostResults(qi);
   };
@@ -412,8 +413,10 @@ async function hostResults(qi){
     ${logo("logo-hero")}
     <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
     <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
-    <div class="title">${good.length} bonne${good.length>1?"s":""}<br>réponse${good.length>1?"s":""}</div>
-    <div class="players">${correctNames.length
+    ${FORCED_NO_WINNER.has(qi)
+      ? `<div class="title">Même la SPA<br>n'en veut pas</div>`
+      : `<div class="title">${good.length} bonne${good.length>1?"s":""}<br>réponse${good.length>1?"s":""}</div>`}
+    <div class="players">${FORCED_NO_WINNER.has(qi)?"":correctNames.length
       ? correctNames.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
       : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>
     <button class="btn" id="bWinner">Découvrir le gagnant</button>`;
@@ -528,7 +531,7 @@ function playerRender(s){
     if(s.phase==="question"){
     const mine=myAnswers[s.q_index];
     if(mine!==undefined){
-      app.innerHTML=`${logo("logo-hero")}<div class="qnum">Question ${s.q_index+1}</div><div class="title">C'est votre<br>dernier mot ?</div><p class="sub pulse">Réponse ${LETTERS[mine]} enregistrée. Patientez pour le résultat…</p>`;
+      app.innerHTML=`${logo("logo-hero")}<div class="qnum">Question ${s.q_index+1}</div><div class="title">C'est mon<br>dernier mot !</div><p class="sub pulse">Réponse ${LETTERS[mine]} enregistrée. Patientez pour le résultat…</p>`;
       return;
     }
     app.innerHTML=`
@@ -545,7 +548,7 @@ function playerRender(s){
         if(myAnswers[qi]!==undefined) return;
         const choice=parseInt(b.dataset.i);
         myAnswers[qi]=choice;
-        app.innerHTML=`${logo("logo-hero")}<div class="qnum">Question ${qi+1}</div><div class="title">C'est votre<br>dernier mot ?</div><p class="sub pulse">Réponse ${LETTERS[choice]} enregistrée. Patientez pour le résultat…</p>`;
+        app.innerHTML=`${logo("logo-hero")}<div class="qnum">Question ${qi+1}</div><div class="title">C'est mon<br>dernier mot !</div><p class="sub pulse">Réponse ${LETTERS[choice]} enregistrée. Patientez pour le résultat…</p>`;
         const {error}=await sb.from("answers").insert({q_index:qi,player_id:pid,player_name:myName,choice});
         if(error && error.code!=="23505"){ netDown(true); setTimeout(()=>netDown(false),3000); }
       };
@@ -559,8 +562,10 @@ function playerRender(s){
         ${logo("logo-hero")}
         <div class="qnum">Question ${s.q_index+1}</div>
         <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
-        <div class="title">${names.length} bonne${names.length>1?"s":""}<br>réponse${names.length>1?"s":""}</div>
-        <div class="players">${names.length
+        ${FORCED_NO_WINNER.has(s.q_index)
+          ? `<div class="title">Même la SPA<br>n'en veut pas</div>`
+          : `<div class="title">${names.length} bonne${names.length>1?"s":""}<br>réponse${names.length>1?"s":""}</div>`}
+        <div class="players">${FORCED_NO_WINNER.has(s.q_index)?"":names.length
           ? names.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
           : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>
         <p class="sub pulse">Le plus rapide va être révélé…</p>`;
