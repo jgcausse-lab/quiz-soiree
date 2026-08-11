@@ -378,7 +378,10 @@ async function hostLot(qi){
     <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
     <div class="eyebrow">Lot en jeu</div>
     <div class="title">${esc(Q.lot)}</div>`;
-  setHostNav(qi===0?hostOfficialNotice:()=>hostWinner(qi-1),()=>hostQuest(qi));
+  const previous=qi===0
+    ? hostOfficialNotice
+    : FORCED_NO_WINNER.has(qi-1)?()=>hostResults(qi-1):()=>hostWinner(qi-1);
+  setHostNav(previous,()=>hostQuest(qi));
 }
 async function hostQuest(qi){
   playMusic(musicVote,true);
@@ -448,6 +451,9 @@ async function hostResults(qi){
     winner_name:winner?winner.player_name:null,winner_ms,counts,history
   }).eq("id",1);
   if(error){ netDown(true); return; }
+  const displayedCorrect=organizerWin
+    ? organizerWin.answer
+    : `${LETTERS[Q.correct]} : ${Q.choices[Q.correct]}`;
   app.innerHTML=`
     ${logo("logo-hero")}
     <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
@@ -457,8 +463,14 @@ async function hostResults(qi){
       : `<div class="title">${good.length} bonne${good.length>1?"s":""}<br>réponse${good.length>1?"s":""}</div>`}
     <div class="players">${FORCED_NO_WINNER.has(qi)?"":correctNames.length
       ? correctNames.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
-      : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>`;
-  setHostNav(()=>hostQuestion(qi),()=>hostWinner(qi));
+      : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>
+    <div class="stack">
+      ${hex(`<span class="letter">Bonne réponse&nbsp;:</span> ${esc(displayedCorrect)}`,"good")}
+    </div>`;
+  const next=FORCED_NO_WINNER.has(qi)
+    ? ()=>qi>=QUESTIONS.length-1?hostEnd():hostLot(qi+1)
+    : ()=>hostWinner(qi);
+  setHostNav(()=>hostQuestion(qi),next);
 }
 async function hostWinner(qi){
   playMusic(music2014,true);
