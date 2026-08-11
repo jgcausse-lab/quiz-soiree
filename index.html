@@ -492,9 +492,9 @@ async function hostWinner(qi){
     <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
     <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
     ${winner
-         ? `<div class="badge">Le plus rapide</div>
+         ? `<div class="badge">${specialAnswer?"Les gagnants sont":"Le plus rapide"}</div>
          <div class="winner-name">${esc(winner.player_name)}</div>
-         <p class="sub">${winner_ms!==null?`Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — `:"Piège ! La bonne réponse était Tosca. Les organisateurs s'attribuent "}<span class="time">${esc(Q.lot)}</span></p>`
+         ${specialAnswer?"":`<p class="sub">Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — <span class="time">${esc(Q.lot)}</span></p>`}`
       : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}`;
   setHostNav(()=>hostResults(qi),()=>last?hostEnd():hostLot(qi+1));
 }
@@ -629,8 +629,8 @@ function playerRender(s){
         <div class="qnum">Question ${s.q_index+1}</div>
         <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
         ${s.winner_name
-          ? `<div class="badge">Le plus rapide</div><div class="winner-name">${esc(s.winner_name)}</div>
-             <p class="sub">${specialAnswer?"Piège ! La bonne réponse était Tosca. Les organisateurs s'attribuent le lot.":iWon?"Bravo, vous remportez le lot !":iRight?"Bonne réponse, mais pas assez rapide.":"Remporte le lot !"}</p>
+          ? `<div class="badge">${specialAnswer?"Les gagnants sont":"Le plus rapide"}</div><div class="winner-name">${esc(s.winner_name)}</div>
+             ${specialAnswer?"":`<p class="sub">${iWon?"Bravo, vous remportez le lot !":iRight?"Bonne réponse, mais pas assez rapide.":"Remporte le lot !"}</p>`}
              ${s.winner_ms!==null?`<p class="sub">Réponse en <span class="time">${(s.winner_ms/1000).toFixed(2)} s</span></p>`:""}`
           : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
         <div class="stack">
