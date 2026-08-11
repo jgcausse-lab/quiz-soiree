@@ -137,6 +137,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_grhzzmzHT5FSvj5OhdjZ0A_zD59GYed";
 const LETTERS=["A","B","C","D"];
 /* Questions volontairement sans gagnant (indexées à partir de 0). */
 const FORCED_NO_WINNER=new Set([2]);
+/* Questions-pièges dont le lot revient aux organisateurs. */
+const ORGANIZER_WINS=new Map([[3,{answer:"Tosca",winner:"Les organisateurs"}]]);
 const QR_B64="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";
 function qrBlock(){ return `<div class="qr"><img src="data:image/png;base64,${QR_B64}" alt="QR code du jeu"></div>`; }
 const app=document.getElementById("app");
@@ -296,7 +298,7 @@ async function hostLobby(){
       <div class="players">${names.size?[...names].map(n=>`<span class="chip">${esc(n)}</span>`).join(""):'<span class="status pulse">Personne pour l\'instant…</span>'}</div>
       <p class="status">${names.size} joueur${names.size>1?"s":""} connecté${names.size>1?"s":""}</p>
       <button class="btn" id="bStart">Lancer la première question</button>`;
-    document.getElementById("bStart").onclick=()=>hostLot(0);
+      document.getElementById("bStart").onclick=hostOfficialNotice;
   };
   draw();
   if(channel) sb.removeChannel(channel);
@@ -309,8 +311,22 @@ async function hostLobby(){
     if(data){ data.forEach(x=>names.add(x.name)); netDown(false); draw(); } else netDown(true);
   },4000);
 }
-async function hostLot(qi){
+async function hostOfficialNotice(){
+  if(pollTimer) clearInterval(pollTimer);
+  if(channel) sb.removeChannel(channel);
+  const {error}=await sb.from("game_state").update({phase:"notice",q_index:-1}).eq("id",1);
+  if(error){ netDown(true); return; }
   playMusic(music2014,true);
+  app.innerHTML=`
+    ${logo("logo-hero")}
+    <div class="eyebrow">Avis officiel</div>
+    <div class="title">Quizz sous contrôle officiel</div>
+    <p class="sub tagline">de Maître Lanchon, notaire</p>
+    <button class="btn" id="bBegin">Commencer le quiz</button>`;
+  document.getElementById("bBegin").onclick=()=>hostLot(0);
+}
+async function hostLot(qi){
+  playMusic(qi===0?music2014:music2008,true);
   if(pollTimer) clearInterval(pollTimer);
   if(channel) sb.removeChannel(channel);
   const {error}=await sb.from("game_state").update({phase:"lot",q_index:qi,winner_name:null,winner_ms:null,correct_choice:null,counts:null}).eq("id",1);
@@ -325,7 +341,7 @@ async function hostLot(qi){
   document.getElementById("bNext").onclick=()=>hostQuest(qi);
 }
 async function hostQuest(qi){
-  playMusic(music2008,true);
+  playMusic(musicVote,true);
   const {error}=await sb.from("game_state").update({phase:"quest",q_index:qi}).eq("id",1);
   if(error){ netDown(true); return; }
   const Q=QUESTIONS[qi];
@@ -341,7 +357,6 @@ async function hostQuest(qi){
   document.getElementById("bNext").onclick=()=>hostQuestion(qi);
 }
 async function hostQuestion(qi){
-  playMusic(musicVote,true);
   const {error}=await sb.from("game_state").update({phase:"question",q_index:qi,winner_name:null,winner_ms:null,correct_choice:null,counts:null}).eq("id",1);
   if(error){ netDown(true); return; }
   const Q=QUESTIONS[qi];
@@ -379,12 +394,14 @@ async function hostResults(qi){
   const counts=[0,0,0,0];
   all.forEach(a=>{ counts[a.choice]++; });
   const t0=new Date(st.q_started_at).getTime();
-  const good=FORCED_NO_WINNER.has(qi)?[]:all.filter(a=>a.choice===Q.correct);
-  const winner=good.length?good[0]:null;
-  const winner_ms=winner?Math.max(0,new Date(winner.created_at).getTime()-t0):null;
+  const organizerWin=ORGANIZER_WINS.get(qi);
+  const good=(FORCED_NO_WINNER.has(qi)||organizerWin)?[]:all.filter(a=>a.choice===Q.correct);
+  const winner=organizerWin?{player_name:organizerWin.winner}:good.length?good[0]:null;
+  const winner_ms=organizerWin?null:winner?Math.max(0,new Date(winner.created_at).getTime()-t0):null;
   const correctNames=good.map(a=>a.player_name);
   const history=[...(st.history||[]),{
-    q:qi,winner:winner?winner.player_name:null,ms:winner_ms,lot:Q.lot,correctNames
+    q:qi,winner:winner?winner.player_name:null,ms:winner_ms,lot:Q.lot,correctNames,
+    specialAnswer:organizerWin?organizerWin.answer:null
   }];
   const {error}=await sb.from("game_state").update({
     phase:"results",q_index:qi,correct_choice:null,
@@ -409,6 +426,7 @@ async function hostWinner(qi){
   const current=[...(st.history||[])].reverse().find(h=>h.q===qi);
   const winner=current&&current.winner?{player_name:current.winner}:null;
   const winner_ms=current?current.ms:null;
+  const specialAnswer=current&&current.specialAnswer?current.specialAnswer:null;
   const {error}=await sb.from("game_state").update({
     phase:"reveal",q_index:qi,correct_choice:Q.correct
   }).eq("id",1);
@@ -421,10 +439,10 @@ async function hostWinner(qi){
     ${winner
          ? `<div class="badge">Le plus rapide</div>
          <div class="winner-name">${esc(winner.player_name)}</div>
-         <p class="sub">Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — remporte <span class="time">${esc(Q.lot)}</span></p>`
+         <p class="sub">${winner_ms!==null?`Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — `:"Piège ! La bonne réponse était Tosca. Les organisateurs s'attribuent "}<span class="time">${esc(Q.lot)}</span></p>`
       : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
     <div class="stack">
-      ${hex(`<span class="letter">${LETTERS[Q.correct]}&nbsp;:</span> ${esc(Q.choices[Q.correct])}`,"good")}
+      ${hex(specialAnswer?`<span class="letter">Réponse&nbsp;:</span> ${esc(specialAnswer)}`:`<span class="letter">${LETTERS[Q.correct]}&nbsp;:</span> ${esc(Q.choices[Q.correct])}`,"good")}
     </div>
     <button class="btn" id="bNext">${last?"Voir le palmarès":"Question suivante"}</button>`;
     document.getElementById("bNext").onclick=()=> last?hostEnd():hostLot(qi+1);
@@ -480,6 +498,14 @@ async function playerStart(){
 }
 function playerRender(s){
   state=s;
+  if(s.phase==="notice"){
+    app.innerHTML=`${logo("logo-hero")}
+      <div class="eyebrow">Avis officiel</div>
+      <div class="title">Quizz sous contrôle officiel</div>
+      <p class="sub tagline">de Maître Lanchon, notaire</p>
+      <p class="sub pulse">La première question arrive…</p>`;
+    return;
+  }
   if(s.phase==="lobby"||s.q_index<0){
     app.innerHTML=`${logo("logo-hero")}<div class="eyebrow">${esc(myName)}</div><div class="title">Vous êtes<br>dans le jeu</div><p class="sub pulse">La première question arrive…</p>`;
     return;
@@ -544,17 +570,19 @@ function playerRender(s){
       const mine=myAnswers[s.q_index];
       const iWon=s.winner_name===myName && mine===s.correct_choice;
       const iRight=mine===s.correct_choice;
+      const current=[...(s.history||[])].reverse().find(h=>h.q===s.q_index);
+      const specialAnswer=current&&current.specialAnswer?current.specialAnswer:null;
       app.innerHTML=`
         ${logo("logo-hero")}
         <div class="qnum">Question ${s.q_index+1}</div>
         <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
         ${s.winner_name
           ? `<div class="badge">Le plus rapide</div><div class="winner-name">${esc(s.winner_name)}</div>
-             <p class="sub">${iWon?"Bravo, vous remportez le lot !":iRight?"Bonne réponse, mais pas assez rapide.":"Remporte le lot !"}</p>
-             <p class="sub">Réponse en <span class="time">${(s.winner_ms/1000).toFixed(2)} s</span></p>`
+             <p class="sub">${specialAnswer?"Piège ! La bonne réponse était Tosca. Les organisateurs s'attribuent le lot.":iWon?"Bravo, vous remportez le lot !":iRight?"Bonne réponse, mais pas assez rapide.":"Remporte le lot !"}</p>
+             ${s.winner_ms!==null?`<p class="sub">Réponse en <span class="time">${(s.winner_ms/1000).toFixed(2)} s</span></p>`:""}`
           : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
         <div class="stack">
-          ${hex(`<span class="letter">${LETTERS[s.correct_choice]}&nbsp;:</span> ${esc(Q.choices[s.correct_choice])}`,"good")}
+          ${hex(specialAnswer?`<span class="letter">Réponse&nbsp;:</span> ${esc(specialAnswer)}`:`<span class="letter">${LETTERS[s.correct_choice]}&nbsp;:</span> ${esc(Q.choices[s.correct_choice])}`,"good")}
         </div>`;
       return;
     }
