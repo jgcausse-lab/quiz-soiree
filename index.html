@@ -107,10 +107,14 @@
   .qr-url{font-family:'Cinzel',serif;font-weight:700;color:var(--or);font-size:clamp(16px,2.4vw,26px);margin-top:14px;letter-spacing:.06em}
   .logo-fixed{position:fixed;top:14px;right:14px;width:180px;height:180px;z-index:50;filter:drop-shadow(0 4px 16px rgba(0,0,0,.55))}
   .intro-video{width:min(1100px,96vw);max-height:78vh;background:#000;border:2px solid var(--or2);border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.65)}
+  .black-wait{position:fixed;inset:0;background:#000;z-index:80}
   #netwarn{position:fixed;top:0;left:0;right:0;z-index:99;background:#8A1F1F;color:#fff;
     font:600 13px 'Jost',sans-serif;padding:10px 14px;text-align:center;display:none}
-  #soundToggle{position:fixed;left:14px;bottom:14px;z-index:90;display:none;border:1px solid var(--or2);
-    background:var(--nuit);color:var(--or);border-radius:999px;padding:10px 14px;font:600 13px 'Jost',sans-serif;cursor:pointer}
+  #hostNav{position:fixed;left:0;right:0;bottom:14px;z-index:100;display:none;justify-content:center;gap:12px;pointer-events:none}
+  .nav-btn{pointer-events:auto;width:58px;height:40px;border:1px solid #3d414b;border-radius:8px;background:rgba(28,31,38,.82);
+    color:#aeb3bd;font:500 20px 'Jost',sans-serif;cursor:pointer;opacity:.68;transition:opacity .2s,background .2s}
+  .nav-btn:hover,.nav-btn:focus{opacity:1;background:#30343d;outline:none}
+  .nav-btn:disabled{opacity:.15;cursor:default}
   @media (max-width:600px){
     .rule{display:none}
     .qr,.qr-url{display:none}
@@ -123,7 +127,10 @@
 </head>
 <body>
 <div id="netwarn">⚠ Connexion au serveur perdue — nouvelle tentative en cours…</div>
-<button id="soundToggle" type="button" aria-label="Couper la musique">🔊 Musique</button>
+<div id="hostNav" aria-label="Navigation organisateur">
+  <button class="nav-btn" id="hostPrev" type="button" aria-label="Écran précédent">‹</button>
+  <button class="nav-btn" id="hostNext" type="button" aria-label="Écran suivant">›</button>
+</div>
 <audio id="music2014" src="generique-2014.mp3" preload="auto" loop></audio>
 <audio id="music2008" src="generique-2008.mp3" preload="auto" loop></audio>
 <audio id="musicVote" src="vote-du-public.mp3" preload="auto" loop></audio>
@@ -145,28 +152,34 @@ const QR_B64="iVBORw0KGgoAAAANSUhEUgAAAYwAAAGMCAIAAABGWwIdAAAHm0lEQVR4nO3du21sxx
 function qrBlock(){ return `<div class="qr"><img src="data:image/png;base64,${QR_B64}" alt="QR code du jeu"></div>`; }
 const app=document.getElementById("app");
 const netwarn=document.getElementById("netwarn");
-const soundToggle=document.getElementById("soundToggle");
+const hostNav=document.getElementById("hostNav");
+const hostPrev=document.getElementById("hostPrev");
+const hostNext=document.getElementById("hostNext");
 const music2014=document.getElementById("music2014");
 const music2008=document.getElementById("music2008");
 const musicVote=document.getElementById("musicVote");
 const MUSIC=[music2014,music2008,musicVote];
 MUSIC.forEach(a=>a.volume=.62);
-let musicMuted=false;
 function playMusic(track,restart=false){
   if(role!=="host") return;
-  soundToggle.style.display="block";
   MUSIC.forEach(a=>{ if(a!==track) a.pause(); });
   if(restart) track.currentTime=0;
-  if(!musicMuted) track.play().catch(()=>{});
-}
-function toggleMusic(){
-  musicMuted=!musicMuted;
-  MUSIC.forEach(a=>a.muted=musicMuted);
-  soundToggle.textContent=musicMuted?"🔇 Musique":"🔊 Musique";
-  soundToggle.setAttribute("aria-label",musicMuted?"Activer la musique":"Couper la musique");
+  track.play().catch(()=>{});
 }
 function stopMusic(){ MUSIC.forEach(a=>{ a.pause(); a.currentTime=0; }); }
-soundToggle.onclick=toggleMusic;
+let hostPrevAction=null,hostNextAction=null;
+function setHostNav(prev,next){
+  hostPrevAction=prev||null; hostNextAction=next||null;
+  hostNav.style.display=role==="host"?"flex":"none";
+  hostPrev.disabled=!hostPrevAction; hostNext.disabled=!hostNextAction;
+}
+hostPrev.onclick=()=>{ if(hostPrevAction) hostPrevAction(); };
+hostNext.onclick=()=>{ if(hostNextAction) hostNextAction(); };
+document.addEventListener("keydown",e=>{
+  if(role!=="host"||e.repeat) return;
+  if((e.key==="ArrowLeft"||e.key==="PageUp")&&hostPrevAction){ e.preventDefault(); hostPrevAction(); }
+  if((e.key==="ArrowRight"||e.key==="PageDown"||e.key==="Enter"||e.key===" ")&&hostNextAction){ e.preventDefault(); hostNextAction(); }
+});
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function hex(content,cls){ return `<div class="hexrow"><div class="rule"></div><div class="hex ${cls||""}"><div class="hex-in">${content}</div></div><div class="rule"></div></div>`; }
 function netDown(v){ netwarn.style.display=v?"block":"none"; }
@@ -279,7 +292,7 @@ function renderHostLogin(){
     await loadQuestions();
     const {data:secrets}=await sb.from("question_secrets").select();
     (secrets||[]).forEach(s=>{ const q=QUESTIONS.find(x=>x.idx===s.idx); if(q) q.correct=s.correct; });
-    hostOpeningVideo();
+    hostBlackScreen();
   };
 }
 async function hostReset(){
@@ -287,9 +300,9 @@ async function hostReset(){
   await sb.from("players").delete().neq("id","");
   await sb.from("game_state").update({phase:"lobby",q_index:-1,winner_name:null,winner_ms:null,correct_choice:null,counts:null,history:[]}).eq("id",1);
 }
-async function hostLobby(){
+async function hostLobby(reset=true){
   playMusic(musicVote,true);
-  await hostReset();
+  if(reset) await hostReset();
   const names=new Set();
   const draw=()=>{
     app.innerHTML=`
@@ -298,11 +311,10 @@ async function hostLobby(){
       <p class="sub">Scannez le QR code avec votre téléphone, puis touchez « Je participe ».</p>
       ${qrBlock()}
       <div class="players">${names.size?[...names].map(n=>`<span class="chip">${esc(n)}</span>`).join(""):'<span class="status pulse">Personne pour l\'instant…</span>'}</div>
-      <p class="status">${names.size} joueur${names.size>1?"s":""} connecté${names.size>1?"s":""}</p>
-      <button class="btn" id="bStart">Lancer la première question</button>`;
-      document.getElementById("bStart").onclick=hostOfficialNotice;
+      <p class="status">${names.size} joueur${names.size>1?"s":""} connecté${names.size>1?"s":""}</p>`;
   };
   draw();
+  setHostNav(hostLogoPanel,hostOfficialNotice);
   if(channel) sb.removeChannel(channel);
   channel=sb.channel("lobby")
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"players"},p=>{ names.add(p.new.name); draw(); })
@@ -323,21 +335,24 @@ async function hostOfficialNotice(){
     ${logo("logo-hero")}
     <div class="eyebrow">Avis officiel</div>
     <div class="title">Quizz sous contrôle officiel</div>
-    <p class="sub tagline">de Maître Lanchon, notaire</p>
-    <button class="btn" id="bBegin">Commencer le quiz</button>`;
-  document.getElementById("bBegin").onclick=()=>hostLot(0);
+    <p class="sub tagline">de Maître Lanchon, notaire</p>`;
+  setHostNav(()=>hostLobby(false),()=>hostLot(0));
+}
+function hostBlackScreen(){
+  stopMusic();
+  app.innerHTML=`<div class="black-wait"></div>`;
+  setHostNav(null,hostOpeningVideo);
 }
 function hostOpeningVideo(){
   stopMusic();
   app.innerHTML=`
-    <video class="intro-video" id="introVideo" src="download.mp4" controls autoplay playsinline></video>
-    <button class="btn ghost" id="bSkipIntro">Passer le générique</button>`;
+    <video class="intro-video" id="introVideo" src="download.mp4" controls autoplay playsinline></video>`;
   const video=document.getElementById("introVideo");
   let advanced=false;
   const advance=()=>{ if(advanced) return; advanced=true; hostLogoPanel(); };
   video.onended=advance;
   video.play().catch(()=>{});
-  document.getElementById("bSkipIntro").onclick=advance;
+  setHostNav(hostBlackScreen,null);
 }
 function hostLogoPanel(){
   app.innerHTML=`
@@ -346,14 +361,10 @@ function hostLogoPanel(){
   const openingLogoMusic=document.getElementById("openingLogoMusic");
   openingLogoMusic.volume=.75;
   openingLogoMusic.play().catch(()=>{});
-  let advanced=false;
-  const advance=()=>{
-    if(advanced) return;
-    advanced=true;
+  setHostNav(hostOpeningVideo,()=>{
     openingLogoMusic.pause();
     hostLobby();
-  };
-  app.onclick=advance;
+  });
 }
 async function hostLot(qi){
   playMusic(qi===0?music2014:music2008,true);
@@ -366,9 +377,8 @@ async function hostLot(qi){
     ${logo()}
     <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
     <div class="eyebrow">Lot en jeu</div>
-    <div class="title">${esc(Q.lot)}</div>
-    <button class="btn" id="bNext">Afficher la question</button>`;
-  document.getElementById("bNext").onclick=()=>hostQuest(qi);
+    <div class="title">${esc(Q.lot)}</div>`;
+  setHostNav(qi===0?hostOfficialNotice:()=>hostWinner(qi-1),()=>hostQuest(qi));
 }
 async function hostQuest(qi){
   playMusic(musicVote,true);
@@ -382,9 +392,8 @@ async function hostQuest(qi){
     ${hex(esc(Q.q),"q")}
     <div class="stack">
       ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span>`)).join("")}
-    </div>
-    <button class="btn" id="bNext">Afficher les réponses</button>`;
-  document.getElementById("bNext").onclick=()=>hostQuestion(qi);
+    </div>`;
+  setHostNav(()=>hostLot(qi),()=>hostQuestion(qi));
 }
 async function hostQuestion(qi){
   const {error}=await sb.from("game_state").update({phase:"question",q_index:qi,winner_name:null,winner_ms:null,correct_choice:null,counts:null}).eq("id",1);
@@ -401,11 +410,10 @@ async function hostQuestion(qi){
       <div class="stack">
         ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span> ${esc(c)}`)).join("")}
       </div>
-      <p class="status pulse">${FORCED_NO_WINNER.has(qi)?"0 participant":`${displayedAnswers} réponse${displayedAnswers>1?"s":""} reçue${displayedAnswers>1?"s":""}`}</p>
-      <button class="btn" id="bReveal">Voir les bonnes réponses</button>`;
-    document.getElementById("bReveal").onclick=()=>hostResults(qi);
+      <p class="status pulse">${FORCED_NO_WINNER.has(qi)?"0 participant":`${displayedAnswers} réponse${displayedAnswers>1?"s":""} reçue${displayedAnswers>1?"s":""}`}</p>`;
   };
   draw();
+  setHostNav(()=>hostQuest(qi),()=>hostResults(qi));
   if(channel) sb.removeChannel(channel);
   channel=sb.channel("answers")
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"answers"},p=>{ if(p.new.q_index===qi){ n++; draw(); } })
@@ -430,10 +438,11 @@ async function hostResults(qi){
   const winner=organizerWin?{player_name:organizerWin.winner}:good.length?good[0]:null;
   const winner_ms=organizerWin?null:winner?Math.max(0,new Date(winner.created_at).getTime()-t0):null;
   const correctNames=good.map(a=>a.player_name);
-  const history=[...(st.history||[]),{
+  const history=[...(st.history||[])].filter(h=>h.q!==qi);
+  history.push({
     q:qi,winner:winner?winner.player_name:null,ms:winner_ms,lot:Q.lot,correctNames,
     specialAnswer:organizerWin?organizerWin.answer:null
-  }];
+  });
   const {error}=await sb.from("game_state").update({
     phase:"results",q_index:qi,correct_choice:null,
     winner_name:winner?winner.player_name:null,winner_ms,counts,history
@@ -448,9 +457,8 @@ async function hostResults(qi){
       : `<div class="title">${good.length} bonne${good.length>1?"s":""}<br>réponse${good.length>1?"s":""}</div>`}
     <div class="players">${FORCED_NO_WINNER.has(qi)?"":correctNames.length
       ? correctNames.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
-      : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>
-    <button class="btn" id="bWinner">Découvrir le gagnant</button>`;
-  document.getElementById("bWinner").onclick=()=>hostWinner(qi);
+      : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>`;
+  setHostNav(()=>hostQuestion(qi),()=>hostWinner(qi));
 }
 async function hostWinner(qi){
   playMusic(music2014,true);
@@ -476,9 +484,8 @@ async function hostWinner(qi){
       : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
     <div class="stack">
       ${hex(specialAnswer?`<span class="letter">Réponse&nbsp;:</span> ${esc(specialAnswer)}`:`<span class="letter">${LETTERS[Q.correct]}&nbsp;:</span> ${esc(Q.choices[Q.correct])}`,"good")}
-    </div>
-    <button class="btn" id="bNext">${last?"Voir le palmarès":"Question suivante"}</button>`;
-    document.getElementById("bNext").onclick=()=> last?hostEnd():hostLot(qi+1);
+    </div>`;
+  setHostNav(()=>hostResults(qi),()=>last?hostEnd():hostLot(qi+1));
 }
 async function hostEnd(){
   playMusic(music2014,true);
@@ -493,9 +500,8 @@ async function hostEnd(){
     <div class="podium">${ranked.length?ranked.map(([n,lots],i)=>`
       <div class="line"><span>${i+1}. ${esc(n)}</span><span class="time">${lots.map(esc).join(" · ")}</span></div>`).join("")
       :'<span class="status">Aucun gagnant cette fois.</span>'}
-    </div>
-    <button class="btn" id="bAgain">Nouvelle partie</button>`;
-  document.getElementById("bAgain").onclick=hostLobby;
+    </div>`;
+  setHostNav(()=>hostWinner(QUESTIONS.length-1),()=>hostLobby(true));
 }
 
 /* ============================================================
