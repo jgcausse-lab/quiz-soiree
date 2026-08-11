@@ -107,6 +107,8 @@
   .logo-fixed{position:fixed;top:14px;right:14px;width:180px;height:180px;z-index:50;filter:drop-shadow(0 4px 16px rgba(0,0,0,.55))}
   #netwarn{position:fixed;top:0;left:0;right:0;z-index:99;background:#8A1F1F;color:#fff;
     font:600 13px 'Jost',sans-serif;padding:10px 14px;text-align:center;display:none}
+  #soundToggle{position:fixed;left:14px;bottom:14px;z-index:90;display:none;border:1px solid var(--or2);
+    background:var(--nuit);color:var(--or);border-radius:999px;padding:10px 14px;font:600 13px 'Jost',sans-serif;cursor:pointer}
   @media (max-width:600px){
     .rule{display:none}
     .qr,.qr-url{display:none}
@@ -119,6 +121,10 @@
 </head>
 <body>
 <div id="netwarn">⚠ Connexion au serveur perdue — nouvelle tentative en cours…</div>
+<button id="soundToggle" type="button" aria-label="Couper la musique">🔊 Musique</button>
+<audio id="music2014" src="generique-2014.mp3" preload="auto" loop></audio>
+<audio id="music2008" src="generique-2008.mp3" preload="auto" loop></audio>
+<audio id="musicVote" src="vote-du-public.mp3" preload="auto" loop></audio>
 <div id="app"></div>
 <script>
 /* ============================================================
@@ -129,10 +135,33 @@ const SUPABASE_URL      = "https://labvcqywqzhpzsxkjejm.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_grhzzmzHT5FSvj5OhdjZ0A_zD59GYed";
 
 const LETTERS=["A","B","C","D"];
+/* Questions volontairement sans gagnant (indexées à partir de 0). */
+const FORCED_NO_WINNER=new Set([2]);
 const QR_B64="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";
 function qrBlock(){ return `<div class="qr"><img src="data:image/png;base64,${QR_B64}" alt="QR code du jeu"></div>`; }
 const app=document.getElementById("app");
 const netwarn=document.getElementById("netwarn");
+const soundToggle=document.getElementById("soundToggle");
+const music2014=document.getElementById("music2014");
+const music2008=document.getElementById("music2008");
+const musicVote=document.getElementById("musicVote");
+const MUSIC=[music2014,music2008,musicVote];
+MUSIC.forEach(a=>a.volume=.62);
+let musicMuted=false;
+function playMusic(track,restart=false){
+  if(role!=="host") return;
+  soundToggle.style.display="block";
+  MUSIC.forEach(a=>{ if(a!==track) a.pause(); });
+  if(restart) track.currentTime=0;
+  if(!musicMuted) track.play().catch(()=>{});
+}
+function toggleMusic(){
+  musicMuted=!musicMuted;
+  MUSIC.forEach(a=>a.muted=musicMuted);
+  soundToggle.textContent=musicMuted?"🔇 Musique":"🔊 Musique";
+  soundToggle.setAttribute("aria-label",musicMuted?"Activer la musique":"Couper la musique");
+}
+soundToggle.onclick=toggleMusic;
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function hex(content,cls){ return `<div class="hexrow"><div class="rule"></div><div class="hex ${cls||""}"><div class="hex-in">${content}</div></div><div class="rule"></div></div>`; }
 function netDown(v){ netwarn.style.display=v?"block":"none"; }
@@ -242,6 +271,7 @@ function renderHostLogin(){
     const {error}=await sb.auth.signInWithPassword({email,password});
     if(error){ document.getElementById("err").textContent="Identifiants refusés."; return; }
     role="host";
+    playMusic(music2014,true);
     await loadQuestions();
     const {data:secrets}=await sb.from("question_secrets").select();
     (secrets||[]).forEach(s=>{ const q=QUESTIONS.find(x=>x.idx===s.idx); if(q) q.correct=s.correct; });
@@ -254,6 +284,7 @@ async function hostReset(){
   await sb.from("game_state").update({phase:"lobby",q_index:-1,winner_name:null,winner_ms:null,correct_choice:null,counts:null,history:[]}).eq("id",1);
 }
 async function hostLobby(){
+  playMusic(music2014,true);
   await hostReset();
   const names=new Set();
   const draw=()=>{
@@ -279,6 +310,7 @@ async function hostLobby(){
   },4000);
 }
 async function hostLot(qi){
+  playMusic(music2014,true);
   if(pollTimer) clearInterval(pollTimer);
   if(channel) sb.removeChannel(channel);
   const {error}=await sb.from("game_state").update({phase:"lot",q_index:qi,winner_name:null,winner_ms:null,correct_choice:null,counts:null}).eq("id",1);
@@ -293,6 +325,7 @@ async function hostLot(qi){
   document.getElementById("bNext").onclick=()=>hostQuest(qi);
 }
 async function hostQuest(qi){
+  playMusic(music2008,true);
   const {error}=await sb.from("game_state").update({phase:"quest",q_index:qi}).eq("id",1);
   if(error){ netDown(true); return; }
   const Q=QUESTIONS[qi];
@@ -308,6 +341,7 @@ async function hostQuest(qi){
   document.getElementById("bNext").onclick=()=>hostQuestion(qi);
 }
 async function hostQuestion(qi){
+  playMusic(musicVote,true);
   const {error}=await sb.from("game_state").update({phase:"question",q_index:qi,winner_name:null,winner_ms:null,correct_choice:null,counts:null}).eq("id",1);
   if(error){ netDown(true); return; }
   const Q=QUESTIONS[qi];
@@ -345,7 +379,7 @@ async function hostResults(qi){
   const counts=[0,0,0,0];
   all.forEach(a=>{ counts[a.choice]++; });
   const t0=new Date(st.q_started_at).getTime();
-  const good=all.filter(a=>a.choice===Q.correct);
+  const good=FORCED_NO_WINNER.has(qi)?[]:all.filter(a=>a.choice===Q.correct);
   const winner=good.length?good[0]:null;
   const winner_ms=winner?Math.max(0,new Date(winner.created_at).getTime()-t0):null;
   const correctNames=good.map(a=>a.player_name);
@@ -369,6 +403,7 @@ async function hostResults(qi){
   document.getElementById("bWinner").onclick=()=>hostWinner(qi);
 }
 async function hostWinner(qi){
+  playMusic(music2014,true);
   const Q=QUESTIONS[qi];
   const st=await fetchState(); if(!st) return;
   const current=[...(st.history||[])].reverse().find(h=>h.q===qi);
@@ -395,6 +430,7 @@ async function hostWinner(qi){
     document.getElementById("bNext").onclick=()=> last?hostEnd():hostLot(qi+1);
 }
 async function hostEnd(){
+  playMusic(music2014,true);
   const st=await fetchState(); if(!st) return;
   await sb.from("game_state").update({phase:"end"}).eq("id",1);
   const byPlayer={};
