@@ -106,14 +106,14 @@
   .qr img{display:block;width:min(300px,55vw);height:auto;image-rendering:pixelated}
   .qr-url{font-family:'Cinzel',serif;font-weight:700;color:var(--or);font-size:clamp(16px,2.4vw,26px);margin-top:14px;letter-spacing:.06em}
   .logo-fixed{position:fixed;top:14px;right:14px;width:180px;height:180px;z-index:50;filter:drop-shadow(0 4px 16px rgba(0,0,0,.55))}
-  .intro-video{width:min(1100px,96vw);max-height:78vh;background:#000;border:2px solid var(--or2);border-radius:8px;box-shadow:0 18px 60px rgba(0,0,0,.65)}
+  .intro-video{width:min(1100px,96vw);max-height:78vh;background:#000;border:0;border-radius:0;box-shadow:none;outline:none}
   .black-wait{position:fixed;inset:0;background:#000;z-index:80}
   #netwarn{position:fixed;top:0;left:0;right:0;z-index:99;background:#8A1F1F;color:#fff;
     font:600 13px 'Jost',sans-serif;padding:10px 14px;text-align:center;display:none}
-  #hostNav{position:fixed;left:0;right:0;bottom:max(34px,env(safe-area-inset-bottom));z-index:9999;display:none;justify-content:center;gap:14px;pointer-events:none}
-  .nav-btn{pointer-events:auto;width:68px;height:46px;border:1px solid #555b66;border-radius:9px;background:rgba(30,34,42,.94);
-    color:#d0d3d9;font:500 24px 'Jost',sans-serif;cursor:pointer;opacity:.82;box-shadow:0 4px 18px rgba(0,0,0,.55);transition:opacity .2s,background .2s}
-  .nav-btn:hover,.nav-btn:focus{opacity:1;background:#30343d;outline:none}
+  #hostNav{position:fixed;right:24px;bottom:max(24px,env(safe-area-inset-bottom));z-index:9999;display:none;justify-content:flex-end;gap:10px;pointer-events:none}
+  .nav-btn{pointer-events:auto;width:68px;height:46px;border:0;border-radius:9px;background:rgba(30,34,42,.72);
+    color:#b9bdc5;font:500 24px 'Jost',sans-serif;cursor:pointer;opacity:.66;box-shadow:none;outline:none;transition:opacity .2s,background .2s}
+  .nav-btn:hover,.nav-btn:focus{opacity:.9;background:rgba(48,52,61,.78);outline:none}
   .nav-btn:disabled{opacity:.15;cursor:default}
   @media (max-width:600px){
     .rule{display:none}
@@ -312,9 +312,9 @@ async function hostLobby(reset=true){
       ${qrBlock()}
       <div class="players">${names.size?[...names].map(n=>`<span class="chip">${esc(n)}</span>`).join(""):'<span class="status pulse">Personne pour l\'instant…</span>'}</div>
       <p class="status">${names.size} joueur${names.size>1?"s":""} connecté${names.size>1?"s":""}</p>`;
+    setHostNav(hostLogoPanel,hostOfficialNotice);
   };
   draw();
-  setHostNav(hostLogoPanel,hostOfficialNotice);
   if(channel) sb.removeChannel(channel);
   channel=sb.channel("lobby")
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"players"},p=>{ names.add(p.new.name); draw(); })
