@@ -93,7 +93,8 @@
   .qnum{color:var(--muted);font-size:12px;letter-spacing:.35em;text-transform:uppercase;margin-bottom:16px;font-weight:600}
   .podium{margin-top:28px;display:flex;flex-direction:column;gap:10px;width:min(460px,100%)}
   .podium .line{background:var(--nuit);border:1px solid var(--bleu2);border-radius:4px;padding:14px 20px;display:flex;justify-content:space-between;gap:14px;font-weight:500;text-align:left}
-  .podium .line:first-child{border-color:var(--or)}
+  .podium .line:first-child{border-color:var(--bleu2)}
+  .answer-count{white-space:nowrap;font-size:clamp(21px,4.4vw,50px)}
   .status{color:var(--muted);font-size:14px;margin-top:18px}
   .err{color:#F08A8A;font-size:14px;margin-top:14px;min-height:18px}
   .pulse{animation:pulse 1.8s ease-in-out infinite}
@@ -150,13 +151,13 @@ const FORCED_NO_WINNER=new Set([7]);
 const ORGANIZER_WINS=new Map([[6,{answer:"Tosca",winner:"Les organisateurs"}]]);
 const QUIZ_QUESTIONS=[
   {idx:0,lot:"Une Aston Martin",q:"Depuis que nous connaissons Kate, son retard cumulé est de :",choices:["41 jours 11 min","41 semaines 11 jours","41 mois 11 semaines","41 ans 11 mois"],correct:2},
-  {idx:1,lot:"Le moulin du domaine du Rouloir",q:"Quel est le tube international des Arrache-Moquettes ?",choices:["Daniella","Virginia","Birgitta","Gabriella"],correct:1},
+  {idx:1,lot:"Le moulin du domaine du Rouloir",q:"Quelle est la phrase qui n’est pas dans le tube international « Virginia » des Arrache-Moquettes ?",choices:["Monte là-dessus, tu verras Montmartre","Mais je crois bien que je t’aime pour ça","Il est parti faire chauffer le diesel","T’as vraiment de gros nénés"],correct:2},
   {idx:2,lot:"La chaumière du Rouloir",q:"Quel est le prochain projet professionnel de Dave ?",choices:["Ouvrir un foyer de soutien pour nymphomanes incurables","Monter un centre de coaching pour chiens de race","Racheter Kone pour offrir à Kate un plan de départ acceptable","Devenir la Fondation Carmignac de Normandie"],correct:2},
   {idx:3,lot:"La maison principale du Rouloir",q:"Pourquoi Kate et Dave se sont-ils établis en Normandie plutôt qu’en Bretagne ?",choices:["Parce que c’est un Normand qui a été couronné roi d’Angleterre !","Les routes sont trop étroites pour l’Aston en Bretagne","Il pleut moins en Normandie qu’en Bretagne","Il y a trop de roux en Bretagne !"],correct:1},
   {idx:4,lot:"Une chaîne hi-fi Puccini",q:"Avant de se coucher dans sa suite présidentielle en Autriche, Kate :",choices:["Se lave les dents","Passe la débroussailleuse","Crache dans les rideaux","S’effeuille langoureusement"],correct:1},
   {idx:5,lot:"La cave à cigares de Dave",q:"Sur 10, quel est le niveau d’articulation de Dave ?",choices:["5","6","3","xbrgf…"],correct:3},
   {idx:6,lot:"100 % des parts de Mahé Participation",q:"Dans cette famille de roux, qui est le plus roux ?",choices:["Dave","Juliette","Émile","Joséphine"],correct:1},
-  {idx:7,lot:"Tosca",q:"Quel est le bonnet des seins de Kate ?",choices:["B","C","D","F"],correct:2}
+  {idx:7,lot:"Tosca",q:"Quel est le bonnet des seins de Kate ?",choices:["Bonnet B","Bonnet C","Bonnet D","Bonnet F"],correct:2}
 ];
 const QR_B64="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";
 function qrBlock(){ return `<div class="qr"><img src="data:image/png;base64,${QR_B64}" alt="QR code du jeu"></div>`; }
@@ -467,7 +468,7 @@ async function hostResults(qi){
     <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
     ${FORCED_NO_WINNER.has(qi)
       ? `<div class="title">Même la SPA<br>n'en veut pas</div>`
-      : `<div class="title">${good.length} bonne${good.length>1?"s":""}<br>réponse${good.length>1?"s":""}</div>`}
+      : `<div class="title answer-count">${good.length} bonne${good.length>1?"s":""} réponse${good.length>1?"s":""}</div>`}
     <div class="players">${FORCED_NO_WINNER.has(qi)?"":correctNames.length
       ? correctNames.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
       : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>
@@ -616,7 +617,7 @@ function playerRender(s){
         <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
         ${FORCED_NO_WINNER.has(s.q_index)
           ? `<div class="title">Même la SPA<br>n'en veut pas</div>`
-          : `<div class="title">${names.length} bonne${names.length>1?"s":""}<br>réponse${names.length>1?"s":""}</div>`}
+          : `<div class="title answer-count">${names.length} bonne${names.length>1?"s":""} réponse${names.length>1?"s":""}</div>`}
         <div class="players">${FORCED_NO_WINNER.has(s.q_index)?"":names.length
           ? names.map(n=>`<span class="chip">${esc(n)}</span>`).join("")
           : '<span class="status">Personne n\'a trouvé la bonne réponse.</span>'}</div>
