@@ -94,12 +94,17 @@
   .podium{margin-top:28px;display:flex;flex-direction:column;gap:10px;width:min(460px,100%)}
   .podium .line{background:var(--nuit);border:1px solid var(--bleu2);border-radius:4px;padding:14px 20px;display:flex;justify-content:space-between;gap:14px;font-weight:500;text-align:left}
   .podium .line:first-child{border-color:var(--bleu2)}
+  .podium .line.closing{border-color:var(--or);background:rgba(232,185,74,.08);margin-top:6px}
+  .title-end{font-size:clamp(22px,3.4vw,36px);margin-top:2px}
+  .podium.compact{width:min(760px,100%);gap:6px;margin-top:14px}
+  .podium.compact .line{padding:8px 16px;font-size:15px;line-height:1.25}
   .answer-count{white-space:nowrap;font-size:clamp(21px,4.4vw,50px)}
   .status{color:var(--muted);font-size:14px;margin-top:18px}
   .err{color:#F08A8A;font-size:14px;margin-top:14px;min-height:18px}
   .pulse{animation:pulse 1.8s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
   .logo-hero{width:min(300px,52vw);height:auto;margin:6px 0 4px;filter:drop-shadow(0 8px 30px rgba(0,0,0,.6))}
+  .logo-mini{width:min(118px,20vw);height:auto;margin:0;filter:drop-shadow(0 4px 14px rgba(0,0,0,.6))}
   .logo-opening{width:min(680px,88vw);height:auto;filter:drop-shadow(0 18px 65px rgba(0,0,0,.8))}
   .tagline{font-size:clamp(19px,2.8vw,32px);color:var(--blanc);max-width:760px;font-weight:500}
   .notary-medallion{width:clamp(110px,15vw,180px);height:clamp(110px,15vw,180px);object-fit:cover;border-radius:50%;border:3px solid var(--or);margin:12px 0 4px;box-shadow:0 10px 36px rgba(0,0,0,.55)}
@@ -146,20 +151,50 @@ const SUPABASE_URL      = "https://labvcqywqzhpzsxkjejm.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_grhzzmzHT5FSvj5OhdjZ0A_zD59GYed";
 
 const LETTERS=["A","B","C","D"];
-/* Questions volontairement sans gagnant (indexées à partir de 0). */
-const FORCED_NO_WINNER=new Set([7]);
-/* Questions-pièges dont le lot revient aux organisateurs. */
-const ORGANIZER_WINS=new Map([[6,{answer:"Tosca",winner:"Les organisateurs"}]]);
+/* ============================================================
+   MÉCANIQUES PARTICULIÈRES
+   Chaque règle désigne sa question par un fragment de son texte, jamais
+   par son rang : réordonner ou insérer des questions ne casse plus rien.
+   Le fragment doit correspondre à une seule question ; sinon un bandeau
+   rouge le signale au chargement et la règle est ignorée.
+   ============================================================ */
+const REGLES={
+  sansGagnant:     {q:"bonnet des seins"},
+  auxOrganisateurs:{q:"plus roux",     answer:"Tosca", winner:"Les organisateurs"},
+  quatreBonnes:    {q:"plat préféré",  answer:"Les quatre ! Tout est bon chez Lartigue."},
+  chutePalmares:   {q:"bonnet des seins", label:"Il ne reste à Kate et Dave que"}
+};
 const QUIZ_QUESTIONS=[
-  {idx:0,lot:"Une Aston Martin",q:"Depuis que nous connaissons Kate, son retard cumulé est de :",choices:["41 jours 11 min","41 semaines 11 jours","41 mois 11 semaines","41 ans 11 mois"],correct:2},
-  {idx:1,lot:"Le moulin du domaine du Rouloir",q:"Quelle est la phrase qui n’est pas dans le tube international « Virginia » des Arrache-Moquettes ?",choices:["Monte là-dessus, tu verras Montmartre","Mais je crois bien que je t’aime pour ça","Il est parti faire chauffer le diesel","T’as vraiment de gros nénés"],correct:2},
-  {idx:2,lot:"La chaumière du Rouloir",q:"Quel est le prochain projet professionnel de Dave ?",choices:["Un fonds d’investissement pour jeunes Bretons","Monter un centre de coaching pour chiens de race","Racheter Kone pour offrir à Kate un plan de départ acceptable","Devenir la Fondation Carmignac de Normandie"],correct:2},
-  {idx:3,lot:"La maison principale du Rouloir",q:"Pourquoi Kate et Dave se sont-ils établis en Normandie plutôt qu’en Bretagne ?",choices:["Parce que c’est un Normand qui a été couronné roi d’Angleterre !","Les routes sont trop étroites pour l’Aston en Bretagne","Il pleut moins en Normandie qu’en Bretagne","Il y a trop de roux en Bretagne !"],correct:1},
-  {idx:4,lot:"Une chaîne hi-fi Puccini",q:"Avant de se coucher dans sa suite présidentielle en Autriche, Kate :",choices:["Se lave les dents","Passe la débroussailleuse","Crache dans les rideaux","S’effeuille langoureusement"],correct:1},
-  {idx:5,lot:"La cave à cigares de Dave",q:"Sur 10, quel est le niveau d’articulation de Dave ?",choices:["5","6","3","xbrgf…"],correct:3},
-  {idx:6,lot:"100 % des parts de Mahé Participation",q:"Dans cette famille de roux, qui est le plus roux ?",choices:["Dave","Juliette","Émile","Joséphine"],correct:1},
-  {idx:7,lot:"Tosca",q:"Quel est le bonnet des seins de Kate ?",choices:["Bonnet B","Bonnet C","Bonnet D","Bonnet F"],correct:2}
+  {idx:0,lot:"La cave à cigares de Dave",q:"Depuis que nous connaissons Kate, son retard cumulé est de :",choices:["41 jours 11 min","41 semaines 11 jours","41 mois 11 semaines","41 ans 11 mois"],correct:2},
+  {idx:1,lot:"La Rolex et les faux seins de Kate",q:"Quelle est la phrase qui n’est pas dans le tube international « Virginia » des Arrache-Moquettes ?",choices:["Monte là-dessus, tu verras Montmartre","Mais je crois bien que je t’aime pour ça","Il est parti faire chauffer le diesel","T’as vraiment de gros nénés"],correct:2},
+  {idx:2,lot:"Une chaîne hi-fi Puccini",q:"Quand la voiture de Dave et Kate disparaît en forêt dans un cortège de mariage :",choices:["Ils vont cueillir des champignons","Ils ont besoin d’embrasser des arbres","Ils vont faire griller des chamallows autour d’un feu","Kate a besoin d’une grosse bûche"],correct:3},
+  {idx:3,lot:"Une Aston Martin",q:"Le plat signature de Kate est :",choices:["le thon aux ananas","la pizza aux ananas","des ananas aux ananas","aucun. Elle déteste les ananas."],correct:0},
+  {idx:4,lot:"La maison de Vanves",q:"Quel est le prochain projet professionnel de Dave ?",choices:["Un fonds d’investissement pour jeunes Bretons","Monter un centre de coaching pour chiens de race","Racheter Kone pour offrir à Kate un plan de départ acceptable","Devenir la Fondation Carmignac de Normandie"],correct:2},
+  {idx:5,lot:"La chaumière du Rouloir",q:"Le plat préféré de Kate et Dave :",choices:["le délicieux foie gras au poivre de chez Lartigue","le merveilleux confit de canard de chez Lartigue","l’extraordinaire jambonneau de chez Lartigue","le fantastique boudin de chez Lartigue"],correct:0},
+  {idx:6,lot:"Le moulin du domaine du Rouloir",q:"Avant de se coucher dans sa suite présidentielle en Autriche, Kate :",choices:["Se lave les dents","Passe la débroussailleuse","Crache dans les rideaux","S’effeuille langoureusement"],correct:1},
+  {idx:7,lot:"La maison principale du Rouloir",q:"Sur 10, quel est le niveau d’articulation de Dave ?",choices:["5","6","3","xbrgf…"],correct:3},
+  {idx:8,lot:"100 % des parts de Mahé Participation",q:"Dans cette famille de roux, qui est le plus roux ?",choices:["Dave","Juliette","Émile","Joséphine"],correct:1},
+  {idx:9,lot:"Tosca",q:"Quel est le bonnet des seins de Kate ?",choices:["Bonnet B","Bonnet C","Bonnet D","Bonnet F"],correct:2}
 ];
+
+/* Résolution des règles ci-dessus en numéros de question. */
+const ERREURS_REGLES=[];
+function rangDeLaQuestion(fragment){
+  const trouves=[];
+  QUIZ_QUESTIONS.forEach((q,i)=>{ if(q.q.toLowerCase().includes(fragment.toLowerCase())) trouves.push(i); });
+  if(trouves.length!==1){
+    ERREURS_REGLES.push(`« ${fragment} » correspond à ${trouves.length} question(s) au lieu d'une seule`);
+    return -1;
+  }
+  return trouves[0];
+}
+const FORCED_NO_WINNER=new Set([rangDeLaQuestion(REGLES.sansGagnant.q)].filter(i=>i>=0));
+const ORGANIZER_WINS=new Map([[rangDeLaQuestion(REGLES.auxOrganisateurs.q),
+  {answer:REGLES.auxOrganisateurs.answer,winner:REGLES.auxOrganisateurs.winner}]].filter(e=>e[0]>=0));
+const ALL_ANSWERS_GOOD=new Map([[rangDeLaQuestion(REGLES.quatreBonnes.q),
+  {answer:REGLES.quatreBonnes.answer}]].filter(e=>e[0]>=0));
+const HOSTS_KEEP=new Map([[rangDeLaQuestion(REGLES.chutePalmares.q),
+  REGLES.chutePalmares.label]].filter(e=>e[0]>=0));
 const QR_B64="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";
 function qrBlock(){ return `<div class="qr"><img src="data:image/png;base64,${QR_B64}" alt="QR code du jeu"></div>`; }
 const app=document.getElementById("app");
@@ -361,8 +396,10 @@ function hostOpeningVideo(){
   let advanced=false;
   const advance=()=>{ if(advanced) return; advanced=true; hostLogoPanel(); };
   video.onended=advance;
+  /* Si download.mp4 est absent ou illisible, on ne reste pas bloque sur l ecran video. */
+  video.onerror=advance;
   video.play().catch(()=>{});
-  setHostNav(hostBlackScreen,null);
+  setHostNav(hostBlackScreen,advance);
 }
 function hostLogoPanel(){
   app.innerHTML=`
@@ -447,14 +484,16 @@ async function hostResults(qi){
   all.forEach(a=>{ counts[a.choice]++; });
   const t0=new Date(st.q_started_at).getTime();
   const organizerWin=ORGANIZER_WINS.get(qi);
-  const good=(FORCED_NO_WINNER.has(qi)||organizerWin)?[]:all.filter(a=>a.choice===Q.correct);
+  const allGood=ALL_ANSWERS_GOOD.get(qi);
+  const good=(FORCED_NO_WINNER.has(qi)||organizerWin)?[]:allGood?all:all.filter(a=>a.choice===Q.correct);
   const winner=organizerWin?{player_name:organizerWin.winner}:good.length?good[0]:null;
   const winner_ms=organizerWin?null:winner?Math.max(0,new Date(winner.created_at).getTime()-t0):null;
   const correctNames=good.map(a=>a.player_name);
   const history=[...(st.history||[])].filter(h=>h.q!==qi);
   history.push({
     q:qi,winner:winner?winner.player_name:null,ms:winner_ms,lot:Q.lot,correctNames,
-    specialAnswer:organizerWin?organizerWin.answer:null
+    specialAnswer:organizerWin?organizerWin.answer:allGood?allGood.answer:null,
+    organizerWin:!!organizerWin
   });
   const {error}=await sb.from("game_state").update({
     phase:"results",q_index:qi,correct_choice:null,
@@ -463,6 +502,8 @@ async function hostResults(qi){
   if(error){ netDown(true); return; }
   const displayedCorrect=organizerWin
     ? organizerWin.answer
+    : allGood
+    ? allGood.answer
     : `${LETTERS[Q.correct]} : ${Q.choices[Q.correct]}`;
   app.innerHTML=`
     ${logo("logo-hero")}
@@ -489,7 +530,7 @@ async function hostWinner(qi){
   const current=[...(st.history||[])].reverse().find(h=>h.q===qi);
   const winner=current&&current.winner?{player_name:current.winner}:null;
   const winner_ms=current?current.ms:null;
-  const specialAnswer=current&&current.specialAnswer?current.specialAnswer:null;
+  const organizerWin=!!(current&&current.organizerWin);
   const {error}=await sb.from("game_state").update({
     phase:"reveal",q_index:qi,correct_choice:Q.correct
   }).eq("id",1);
@@ -500,9 +541,9 @@ async function hostWinner(qi){
     <div class="qnum">Question ${qi+1} / ${QUESTIONS.length}</div>
     <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
     ${winner
-         ? `<div class="badge">${specialAnswer?"Les gagnants sont":"Le plus rapide"}</div>
+         ? `<div class="badge">${organizerWin?"Les gagnants sont":"Le plus rapide"}</div>
          <div class="winner-name">${esc(winner.player_name)}</div>
-         ${specialAnswer?"":`<p class="sub">Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — <span class="time">${esc(Q.lot)}</span></p>`}`
+         ${organizerWin?"":`<p class="sub">Bonne réponse en <span class="time">${(winner_ms/1000).toFixed(2)} s</span> — <span class="time">${esc(Q.lot)}</span></p>`}`
       : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}`;
   setHostNav(()=>hostResults(qi),()=>last?hostEnd():hostLot(qi+1));
 }
@@ -513,12 +554,16 @@ async function hostEnd(){
   const byPlayer={};
   (st.history||[]).forEach(h=>{ if(h.winner){ (byPlayer[h.winner]=byPlayer[h.winner]||[]).push(h.lot); } });
   const ranked=Object.entries(byPlayer).sort((a,b)=>b[1].length-a[1].length);
+  const closing=[...HOSTS_KEEP].map(([qi,who])=>({who,lot:QUESTIONS[qi]&&QUESTIONS[qi].lot})).filter(c=>c.lot);
   app.innerHTML=`
+    ${logo("logo-mini")}
     <div class="eyebrow">Fin du jeu</div>
-    <div class="title">Palmarès</div>
-    <div class="podium">${ranked.length?ranked.map(([n,lots],i)=>`
+    <div class="title title-end">Palmarès</div>
+    <div class="podium compact">${ranked.length?ranked.map(([n,lots],i)=>`
       <div class="line"><span>${i+1}. ${esc(n)}</span><span class="time">${lots.map(esc).join(" · ")}</span></div>`).join("")
       :'<span class="status">Aucun gagnant cette fois.</span>'}
+      ${closing.map(c=>`
+      <div class="line closing"><span>${esc(c.who)}</span><span class="time">${esc(c.lot)}</span></div>`).join("")}
     </div>`;
   setHostNav(()=>hostWinner(QUESTIONS.length-1),()=>hostLobby(true));
 }
@@ -629,17 +674,18 @@ function playerRender(s){
     }
     if(s.phase==="reveal"){
       const mine=myAnswers[s.q_index];
-      const iWon=s.winner_name===myName && mine===s.correct_choice;
-      const iRight=mine===s.correct_choice;
       const current=[...(s.history||[])].reverse().find(h=>h.q===s.q_index);
       const specialAnswer=current&&current.specialAnswer?current.specialAnswer:null;
+      const organizerWin=!!(current&&current.organizerWin);
+      const iRight=ALL_ANSWERS_GOOD.has(s.q_index)?mine!==undefined:mine===s.correct_choice;
+      const iWon=s.winner_name===myName && iRight;
       app.innerHTML=`
         ${logo("logo-hero")}
         <div class="qnum">Question ${s.q_index+1}</div>
         <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
         ${s.winner_name
-          ? `<div class="badge">${specialAnswer?"Les gagnants sont":"Le plus rapide"}</div><div class="winner-name">${esc(s.winner_name)}</div>
-             ${specialAnswer?"":`<p class="sub">${iWon?"Bravo, vous remportez le lot !":iRight?"Bonne réponse, mais pas assez rapide.":"Remporte le lot !"}</p>`}
+          ? `<div class="badge">${organizerWin?"Les gagnants sont":"Le plus rapide"}</div><div class="winner-name">${esc(s.winner_name)}</div>
+             ${organizerWin?"":`<p class="sub">${iWon?"Bravo, vous remportez le lot !":iRight?"Bonne réponse, mais pas assez rapide.":"Remporte le lot !"}</p>`}
              ${s.winner_ms!==null?`<p class="sub">Réponse en <span class="time">${(s.winner_ms/1000).toFixed(2)} s</span></p>`:""}`
           : `<div class="winner-name">Personne !</div><p class="sub">Aucune bonne réponse — le lot reste en jeu.</p>`}
         <div class="stack">
@@ -657,6 +703,10 @@ function playerRender(s){
   }
 }
 
+if(ERREURS_REGLES.length){
+  netwarn.textContent="⚠ Règles du jeu : "+ERREURS_REGLES.join(" — ")+". Corrigez les fragments dans REGLES.";
+  netwarn.style.display="block";
+}
 if(location.hash==="#animateur") renderHostLogin(); else renderLanding();
 </script>
 </body>
