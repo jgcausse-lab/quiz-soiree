@@ -28,6 +28,10 @@
   .title{font-family:'Cinzel',serif;font-weight:900;color:var(--or);
     font-size:clamp(24px,5vw,54px);line-height:1.1;
     text-shadow:0 0 30px rgba(232,185,74,.35);}
+  .credits{font-family:'Cinzel',serif;font-weight:900;color:var(--blanc);
+    font-size:clamp(22px,4.2vw,48px);line-height:1.25;text-align:center;margin-top:6px}
+  .credits .formidables{display:block;color:var(--or);letter-spacing:.06em;
+    font-size:1.5em;margin-top:.12em;text-shadow:0 0 46px rgba(232,185,74,.5)}
   .eyebrow{letter-spacing:.35em;text-transform:uppercase;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:14px}
   .sub{color:var(--muted);margin-top:14px;font-size:15px;max-width:540px;line-height:1.55}
   .hexrow{display:flex;align-items:center;width:100%;max-width:1000px}
@@ -565,7 +569,18 @@ async function hostEnd(){
       ${closing.map(c=>`
       <div class="line closing"><span>${esc(c.who)}</span><span class="time">${esc(c.lot)}</span></div>`).join("")}
     </div>`;
-  setHostNav(()=>hostWinner(QUESTIONS.length-1),()=>hostLobby(true));
+  setHostNav(()=>hostWinner(QUESTIONS.length-1),hostCredits);
+}
+function hostCredits(){
+  /* Ecran de cloture : on relance le generique depuis le debut.
+     Volontairement cote animateur seulement : la phase Supabase reste "end",
+     donc les telephones continuent d afficher les gains de chacun. */
+  playMusic(music2014,true);
+  app.innerHTML=`
+    ${logo("logo-hero")}
+    <div class="credits">Quelle générosité,<br>Kate et Dave sont
+      <span class="formidables">FOR-MI-DABLES</span></div>`;
+  setHostNav(hostEnd,()=>hostLobby(true));
 }
 
 /* ============================================================
