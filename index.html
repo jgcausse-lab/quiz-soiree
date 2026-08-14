@@ -111,6 +111,15 @@
   .podium.compact .line{padding:8px 16px;font-size:15px;line-height:1.25}
   .answer-count{white-space:nowrap;font-size:clamp(21px,4.4vw,50px)}
   .status{color:var(--muted);font-size:14px;margin-top:18px}
+  /* Reserve la place exacte d un texte sans l afficher : evite que le bloc
+     question ne saute verticalement entre l annonce et la revelation. */
+  .ghost-text{visibility:hidden}
+  /* Les ecrans qui portent une question sont ancres en haut plutot que centres :
+     le bloc tombe au meme endroit quelle que soit la longueur de la question.
+     Uniquement au-dessus de 850 px de haut, pour ne rien couper sur petit ecran. */
+  @media (min-height:850px){
+    #app:has(.hex.q){justify-content:flex-start}
+  }
   .err{color:#F08A8A;font-size:14px;margin-top:14px;min-height:18px}
   .pulse{animation:pulse 1.8s ease-in-out infinite}
   @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
@@ -182,7 +191,7 @@ const QUIZ_QUESTIONS=[
   {idx:3,lot:"Une Aston Martin",q:"Le plat signature de Kate est :",choices:["le thon aux ananas","la pizza aux ananas","des ananas aux ananas","aucun. Elle déteste les ananas."],correct:0},
   {idx:4,lot:"La maison de Vanves",q:"Quel est le prochain projet professionnel de Dave ?",choices:["Un fonds d’investissement pour jeunes Bretons","Monter un centre de coaching pour chiens de race","Racheter Kone pour offrir à Kate un plan de départ acceptable","Devenir la Fondation Carmignac de Normandie"],correct:2},
   {idx:5,lot:"La chaumière du Rouloir",q:"Le plat préféré de Kate et Dave :",choices:["le délicieux foie gras au poivre de chez Lartigue","le merveilleux confit de canard de chez Lartigue","l’extraordinaire jambonneau de chez Lartigue","le fantastique boudin de chez Lartigue"],correct:0},
-  {idx:6,lot:"Le moulin du domaine du Rouloir",q:"Dave se retrouve sur le mur de Berlin en décembre 1989 :",choices:["il constate sa chute et se dit qu’il ne sera jamais de gauche","il observe ce nouvel horizon vers l’Est et se dit qu’il passera bientôt chez Voyageurs du Monde","il pique un maximum de pierres pour les murs d’un futur domaine normand","il tente de galocher la femme d’un bon copain"],correct:3},
+  {idx:6,lot:"Le moulin du domaine du Rouloir",q:"Dave se retrouve sur le mur de Berlin en décembre 1989 :",choices:["il constate sa chute et se dit qu’il ne sera jamais de gauche","il tente de galocher la femme d’un bon copain","il observe ce nouvel horizon vers l’Est et se dit qu’il passera bientôt chez Voyageurs du Monde","il pique un maximum de pierres pour les murs d’un futur domaine normand"],correct:1},
   {idx:7,lot:"La maison principale du Rouloir",q:"Sur 10, quel est le niveau d’articulation de Dave ?",choices:["5","6","3","xbrgf…"],correct:3},
   {idx:8,lot:"100 % des parts de Mahé Participation",q:"Dans cette famille de roux, qui est le plus roux ?",choices:["Dave","Juliette","Émile","Joséphine"],correct:1},
   {idx:9,lot:"Tosca",q:"Pour Kate et Dave, nous sommes :",choices:["for-débiles","for-mifigues-mi-raisins","for-minables","for-midables"],correct:3}
@@ -452,8 +461,9 @@ async function hostQuest(qi){
     <div class="lot"><span class="lbl">Lot en jeu</span><span class="val">${esc(Q.lot)}</span></div>
     ${hex(esc(Q.q),"q")}
     <div class="stack">
-      ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span>`)).join("")}
-    </div>`;
+      ${Q.choices.map((c,i)=>hex(`<span class="letter">${LETTERS[i]}&nbsp;:</span> <span class="ghost-text">${esc(c)}</span>`)).join("")}
+    </div>
+    <p class="status ghost-text">0 réponse reçue</p>`;
   setHostNav(()=>hostLot(qi),()=>hostQuestion(qi));
 }
 async function hostQuestion(qi){
